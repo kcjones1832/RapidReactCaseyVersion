@@ -5,6 +5,7 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -15,10 +16,20 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * project.
  */
 public class Robot extends TimedRobot {
-  private static final String kDefaultAuto = "Default";
-  private static final String kCustomAuto = "My Auto";
-  private String m_autoSelected;
-  private final SendableChooser<String> m_chooser = new SendableChooser<>();
+  private int m_autoSelected;
+  private final SendableChooser<Integer> m_chooser = new SendableChooser<>();
+
+  Drive driveManager = new Drive();
+  Intake intakeManager = new Intake();
+  Shooter shooterManager = new Shooter();
+  Indexer indexerManager = new Indexer();
+  Climber climberManager = new Climber();
+  Vision visionManager = new Vision();
+
+  XboxController controller = new XboxController(0);
+
+  double visionTurn;
+  double visionMove;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -26,9 +37,13 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
-    m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
-    m_chooser.addOption("My Auto", kCustomAuto);
+    m_chooser.setDefaultOption("2 Ball Shoot", 0);
+    m_chooser.addOption("1 Ball Shoot", 1);
+    m_chooser.addOption("Move", 2);
     SmartDashboard.putData("Auto choices", m_chooser);
+
+
+    SmartDashboard.putNumber("Top Speed", 0.5);
   }
 
   /**
@@ -62,12 +77,14 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousPeriodic() {
     switch (m_autoSelected) {
-      case kCustomAuto:
+      case 0:
         // Put custom auto code here
         break;
-      case kDefaultAuto:
-      default:
-        // Put default auto code here
+      case 1:
+
+        break;
+      case 2:
+
         break;
     }
   }
@@ -78,7 +95,30 @@ public class Robot extends TimedRobot {
 
   /** This function is called periodically during operator control. */
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+
+    //if x is pressed the robot will auto turn to the vision target with human control of forwards/backwards
+    if (controller.getRawButton(3)) {
+      visionTurn = visionManager.trackTurn();
+      driveManager.subclassTurn(visionTurn, controller.getRawAxis(4) * 0.5);
+    }
+    else {
+      driveManager.drive();
+    }
+
+    shooterManager.shooter();
+    shooterManager.hoodMotor();
+
+    indexerManager.indexWheel();
+    indexerManager.isBallOurs();
+    indexerManager.publishAllianceColor();
+
+    intakeManager.intake();
+
+    climberManager.climberControl();
+
+    visionManager.display();
+  }
 
   /** This function is called once when the robot is disabled. */
   @Override
