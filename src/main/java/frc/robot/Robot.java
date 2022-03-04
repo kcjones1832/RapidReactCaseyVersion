@@ -30,6 +30,8 @@ public class Robot extends TimedRobot {
 
   double visionTurn;
   double visionMove;
+  
+  static int autoStep;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -44,6 +46,8 @@ public class Robot extends TimedRobot {
 
 
     SmartDashboard.putNumber("Top Speed", 0.5);
+
+    autoStep = 0;
   }
 
   /**
