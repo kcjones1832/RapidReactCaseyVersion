@@ -4,9 +4,11 @@ import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.kauailabs.navx.frc.AHRS;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.I2C.Port;
+import edu.wpi.first.wpilibj.SerialPort.Port;
+//import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -37,6 +39,8 @@ public class Drive {
     
     private AHRS gyro;
 
+    PIDController drivePID = new PIDController(2.3449, 0, 0.19168);
+
     public Drive(){
         driveMotorLeft2.follow(driveMotorLeft1);
         driveMotorRight2.follow(driveMotorRight1);
@@ -50,11 +54,12 @@ public class Drive {
             /* Communicate w/navX-MXP via the MXP SPI Bus.                                     */
             /* Alternatively:  I2C.Port.kMXP, SerialPort.Port.kMXP or SerialPort.Port.kUSB     */
             /* See http://navx-mxp.kauailabs.com/guidance/selecting-an-interface/ for details. */
-            gyro = new AHRS(Port.kMXP); 
+            gyro = new AHRS(Port.kUSB); 
         } catch (RuntimeException ex ) {
             DriverStation.reportError("Error instantiating navX-MXP:  " + ex.getMessage(), true);
         }
         gyro.reset();
+
     }
 
     /**
@@ -158,6 +163,25 @@ public class Drive {
         frc::SmartDashboard::PutNumber("avg position", avgPosition);
         frc::SmartDashboard::PutNumber("left pos", leftCurrentPos);
         frc::SmartDashboard::PutNumber("right pos", rightCurrentPos);*/
+    }
+
+    void autoDrive2(double distance) {
+        leftCurrentPos = driveMotorLeft1.getSelectedSensorPosition() - leftEncLast;
+        rightCurrentPos = driveMotorRight1.getSelectedSensorPosition() - rightEncLast;
+      
+        revNeed = distanceToRev(distance);
+      
+        avgPosition = (leftCurrentPos - rightCurrentPos) / 2.0;
+
+        power = drivePID.calculate(avgPosition, revNeed);
+        power = clampDrive(power,-0.4,0.4);
+
+        differentialDrive.arcadeDrive(power, 0);
+
+        if (drivePID.atSetpoint()){
+            differentialDrive.arcadeDrive(0,0);
+          Robot.autoStep++;
+        }
     }
 
     void autoTurn(double angle) {
